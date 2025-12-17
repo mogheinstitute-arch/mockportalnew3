@@ -15,7 +15,8 @@ const pool = new Pool({
 });
 
 const PREDEFINED_STUDENTS = [
- { email: 'archinuzhatkhan@gmail.com', password: 'archi@123' },
+  { email: 'akshaymoghe5@gmail.com', password: 'Sweetakshay@13' },
+  { email: 'archinuzhatkhan@gmail.com', password: 'archi@123' },
 { email: 'arrek58@gmail.com', password: 'mock2468' },
 { email: 'adityabaranwal317@gmail.com', password: 'Aditya@317' },
 { email: 'Shivyarawat48@gmail.com', password: 'Shivya123' },
