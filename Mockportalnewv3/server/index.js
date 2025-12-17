@@ -1,21 +1,32 @@
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
-import { v4 as uuidv4 } from 'uuid';
 
 const { Pool } = pg;
-
 const app = express();
+
+// Enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
 
+// --- DEBUGGING: Check if the variable exists ---
+if (!process.env.SUPABASE_DATABASE_URL) {
+  console.error("❌ FATAL ERROR: SUPABASE_DATABASE_URL is undefined in Vercel Environment Variables!");
+} else {
+  console.log("✅ Database URL found (Hidden for security)");
+}
+// -----------------------------------------------
+
+// Create the connection pool
+// Note: We use the variable SUPABASE_DATABASE_URL here. 
+// Make sure this matches exactly what is in your Vercel Settings!
 const pool = new Pool({
   connectionString: process.env.SUPABASE_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false } // Required for Supabase
 });
 
 const PREDEFINED_STUDENTS = [
-  { email: 'akshaymoghe5@gmail.com', password: 'Sweetakshay@13' },
+  { email: 'akshaymoghe5@gmail.com', password: '123456789' },
   { email: 'archinuzhatkhan@gmail.com', password: 'archi@123' },
 { email: 'arrek58@gmail.com', password: 'mock2468' },
 { email: 'adityabaranwal317@gmail.com', password: 'Aditya@317' },
@@ -69,15 +80,19 @@ const PREDEFINED_STUDENTS = [
 { email: 'kirtikanttiwari@gmail.com', password: 'Kant1612' },
 { email: 'kumaridivya8092@gmail.com', password: 'Divya123' },
 { email: 'rishuthakur20043@gmail.com', password: 'Test123' },
-{ email: 'aditimutha24@gmail.com', password: 'aditi123' },
+{ email: 'aditimutha24@gmail.com', password: 'aditi123' }
 ];
 
 const PREDEFINED_ADMINS = [
   { email: 'admin@example.com', password: 'admin123' },
 ];
 
+// Helper to seed users (Optional: You might want to remove this in production to save resources)
 async function seedUsers() {
   try {
+    // Only try to seed if we have a connection
+    if (!process.env.SUPABASE_DATABASE_URL) return;
+
     for (const student of PREDEFINED_STUDENTS) {
       await pool.query(
         `INSERT INTO users (email, password, role, approved) 
@@ -94,13 +109,16 @@ async function seedUsers() {
         [admin.email, admin.password]
       );
     }
-    console.log('Predefined users seeded successfully');
+    console.log('User seeding check complete');
   } catch (error) {
     console.error('Error seeding users:', error);
   }
 }
 
+// Run seed on server start (Note: In serverless, this runs on every cold boot)
 seedUsers();
+
+// --- ROUTES ---
 
 app.post('/api/login', async (req, res) => {
   const { email, password, deviceToken, userAgent } = req.body;
@@ -120,7 +138,8 @@ app.post('/api/login', async (req, res) => {
     if (user.role === 'student' && !user.approved) {
       return res.json({ success: false, message: 'Your account is pending admin approval.' });
     }
-    
+
+    // Handle session management
     const activeSession = await pool.query(
       'SELECT * FROM user_sessions WHERE user_id = $1 AND is_active = TRUE',
       [user.id]
@@ -262,7 +281,6 @@ app.post('/api/users/add', async (req, res) => {
 
 app.post('/api/users/approve', async (req, res) => {
   const { email } = req.body;
-  
   try {
     await pool.query('UPDATE users SET approved = TRUE WHERE email = $1', [email]);
     res.json({ success: true });
@@ -274,7 +292,6 @@ app.post('/api/users/approve', async (req, res) => {
 
 app.post('/api/users/reject', async (req, res) => {
   const { email } = req.body;
-  
   try {
     await pool.query('DELETE FROM users WHERE email = $1', [email]);
     res.json({ success: true });
@@ -286,7 +303,6 @@ app.post('/api/users/reject', async (req, res) => {
 
 app.delete('/api/users/:email', async (req, res) => {
   const { email } = req.params;
-  
   try {
     await pool.query('DELETE FROM users WHERE email = $1', [email]);
     res.json({ success: true });
@@ -337,7 +353,4 @@ app.get('/api/attempts', async (req, res) => {
   }
 });
 
-const PORT = 3001;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`API server running on port ${PORT}`);
-});
+export default app;
