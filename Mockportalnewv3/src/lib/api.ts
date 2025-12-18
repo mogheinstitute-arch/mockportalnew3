@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = 'https://mockportalnew3-dmk3.vercel.app/api';
 
 function getDeviceToken(): string {
   let token = localStorage.getItem('device_token');
